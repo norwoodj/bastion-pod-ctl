@@ -21,15 +21,15 @@ type bastionPodOptions struct {
 var defaultKubeConfigPath = filepath.Join(homedir.HomeDir(), ".kube", "config")
 
 const helpOptionHelp = "Print this help menu, then exist"
-const remoteOptionHelp = "The remote host to which this will tunnel a tcp connection through a bastion pod"
-const sshRemotePortHelp = "The ssh port of the remote host we're tunneling to (default = 22)"
-const forwardRemotePortHelp = "The port of the remote host we're tunneling tcp traffic to"
-const forwardLocalPortHelp = "The local port of the tunnel proxying traffic to the private remote host (default = remote-port)"
+const forwardRemotePortHelp = "The port of the remote host we're tunneling tcp traffic to (required)"
+const forwardLocalPortHelp = "The local port of the tunnel proxying traffic to the private remote host (default = ${remote-port})"
 const kubeConfigOptionHelp = "Supply path to a kubeconfig file to use in authenticating to the kubernetes cluster API (default = ~/.kube/config)"
+const remoteOptionHelp = "The remote host to which this will tunnel a tcp connection through a bastion pod (required)"
+const sshRemotePortHelp = "The ssh port of the remote host we're tunneling to (default = 22)"
 const verboseOptionHelp = "Print verbose output"
 
-const forwardSubcommandHelp = "Open a TCP tunnel through the created bastion pod to the specified private remoteHost"
-const sshSubcommandHelp = "SSH through the created bastion pod to the specified private remoteHost"
+const forwardSubcommandHelp = "Open a TCP tunnel through the created bastion pod to the specified private remote host"
+const sshSubcommandHelp = "SSH through the created bastion pod to the specified private remote host"
 
 const remoteHostRequiredMsg = "-r or --remote option is required!"
 const remotePortRequiredMsg = "-p or --remote-port option is required!"
@@ -39,12 +39,17 @@ var helpForSubcommand = map[string]func(){
     "ssh": printSshSubcommandHelp,
 }
 
+var checkOptionsForSubcommand = map[string]func(*bastionPodOptions){
+    "forward": checkForwardOptions,
+    "ssh": checkSshOptions,
+}
+
 func printBaseCommandHelp() {
     fmt.Println("Usage:")
     fmt.Println("  bastion-pod-ctl [options] [subcommand]")
     fmt.Println()
     fmt.Println("bastion-pod-ctl creates a pod running a proxy forwarding TCP traffic to a specified address. Subcommands")
-    fmt.Println("can be used to ssh through this tunnel or simply to leave the tunnel open for other applications to proxy")
+    fmt.Println("can be used to ssh through this tunnel or to leave the tunnel open for other applications to proxy")
     fmt.Println("traffic to the private address")
     fmt.Println()
     fmt.Println("Options:")
@@ -145,10 +150,8 @@ func parseCommandLine() (bastionPodOptions, string) {
             os.Exit(0)
         case "forward":
             forwardFlagSet.Parse(os.Args[2:])
-            checkForwardOptions(&options)
         case "ssh":
             sshFlagSet.Parse(os.Args[2:])
-            checkSshOptions(&options)
         default:
             log.Printf("%q is not valid command.\n", os.Args[1])
             printBaseCommandHelp()
@@ -160,5 +163,6 @@ func parseCommandLine() (bastionPodOptions, string) {
         os.Exit(0)
     }
 
+    checkOptionsForSubcommand[subcommand](&options)
     return options, subcommand
 }

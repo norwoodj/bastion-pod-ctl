@@ -154,6 +154,7 @@ func sshSubcommand(options *bastionPodOptions) {
     bastionPod := createBastionPod(kubeClient)
 
     setupExitHandlers(kubeClient, bastionPod)
+    options.remotePort = 22
     errorChannel, chiselClientPort := startBackgroundForwardingProcesses(
         options,
         kubeClient,
@@ -177,7 +178,7 @@ func sshSubcommand(options *bastionPodOptions) {
 
     log.Printf("Starting SSH session through localhost:%d", chiselClientPort)
     if options.verbose {
-        log.Printf("About to exec: {%s}", strings.Join(command.Args, " "))
+        log.Printf("About to exec: %s", strings.Join(command.Args, " "))
     }
 
     command.Stdout = os.Stdout

@@ -10,6 +10,7 @@ import (
     "k8s.io/client-go/tools/clientcmd"
     "log"
     "k8s.io/client-go/rest"
+    "os"
 )
 
 const defaultChiselServerPodPort = 8080
@@ -18,7 +19,7 @@ const defaultBastionNamespace = "bastion"
 
 
 func getBastionPodName() string {
-    return fmt.Sprintf("test-bastion-%s", time.Now().UTC().Format("20060102-150405"))
+    return fmt.Sprintf("bastion-%s-%s", os.Getenv("USER"), time.Now().UTC().Format("20060102-150405"))
 }
 
 func getBastionNamespaceObject(namespaceName string) apiv1.Namespace {

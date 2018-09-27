@@ -31,7 +31,7 @@ func createPortForwardTunnel(
     )
 
     if verbose {
-        log.Printf("About to exec: {%s}", strings.Join(command.Args, " "))
+        log.Printf("About to exec: %s", strings.Join(command.Args, " "))
     }
 
     backgroundCommands[0] = command
@@ -62,7 +62,7 @@ func setupChiselClient(
                 fmt.Sprintf("localhost:%d (chisel client)", localPort),
                 fmt.Sprintf("localhost:%d (kubectl port-forward)", tunnelPort),
                 fmt.Sprintf("%s:443 (kubernetes master)", kubeConfig.Host),
-                fmt.Sprintf("%s:22 (chisel server pod)", bastionPodName),
+                fmt.Sprintf("%s:%d (chisel server pod)", bastionPodName, defaultChiselServerPodPort),
                 fmt.Sprintf("%s:%d", remoteHost, remotePort),
             },
             " => ",
@@ -79,7 +79,7 @@ func setupChiselClient(
     )
 
     if verbose {
-        log.Printf("About to exec: {%s}", strings.Join(command.Args, " "))
+        log.Printf("About to exec: %s", strings.Join(command.Args, " "))
     }
 
     backgroundCommands[1] = command
