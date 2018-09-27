@@ -4,9 +4,10 @@ import (
     "fmt"
     "log"
     "os/exec"
-    "k8s.io/api/core/v1"
     "sync"
     "strings"
+
+    "k8s.io/api/core/v1"
     "k8s.io/client-go/rest"
 )
 

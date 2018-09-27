@@ -1,20 +1,21 @@
 package main
 
 import (
-    "os/signal"
-    "syscall"
-    "k8s.io/api/core/v1"
-    "os"
-    "log"
-    "k8s.io/client-go/kubernetes"
-    "sync"
-    "k8s.io/client-go/rest"
-    "os/exec"
-    "strings"
-    "time"
-    "github.com/phayes/freeport"
     "fmt"
+    "log"
+    "os"
+    "os/exec"
+    "os/signal"
     "path"
+    "sync"
+    "strings"
+    "syscall"
+    "time"
+
+    "github.com/phayes/freeport"
+    "k8s.io/api/core/v1"
+    "k8s.io/client-go/kubernetes"
+    "k8s.io/client-go/rest"
 )
 
 var defaultSshArgs = []string{
@@ -175,7 +176,7 @@ func sshSubcommand(options *bastionPodOptions) {
     }
 
     sshArgs = append(sshArgs, "localhost")
-    command := exec.Command( "ssh", sshArgs...)
+    command := exec.Command("ssh", sshArgs...)
 
     log.Println("Sleeping 5 seconds to allow proxies to come up...")
     time.Sleep(5 * time.Second)
