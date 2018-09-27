@@ -22,7 +22,8 @@ var defaultSshArgs = []string{
     "-o", "UserKnownHostsFile=/dev/null",
 }
 
-var handlerForSubcommand = map[string]func(options bastionPodOptions){
+var handlerForSubcommand = map[string]func(options *bastionPodOptions){
+    "forward": forwardSubcommand,
     "ssh": sshSubcommand,
 }
 
@@ -66,9 +67,13 @@ func startBackgroundForwardingProcesses(
     }
 
     ephemeralPort0, _ := freeport.GetFreePort()
-    ephemeralPort1, _ := freeport.GetFreePort()
-    chiselClientPort := int32(ephemeralPort0)
-    kubectlTunnelPort := int32(ephemeralPort1)
+    kubectlTunnelPort := int32(ephemeralPort0)
+
+    chiselClientPort := options.localPort
+    if chiselClientPort < 0 {
+        ephemeralPort1, _ := freeport.GetFreePort()
+        chiselClientPort = int32(ephemeralPort1)
+    }
 
     waitGroup.Add(1)
     go createPortForwardTunnel(
@@ -122,13 +127,35 @@ func handleChildProcessErrors(
     }
 }
 
-func sshSubcommand(options bastionPodOptions) {
+func forwardSubcommand(options *bastionPodOptions) {
     kubeClient, kubeConfig := getKubeClient(options.kubeConfigFile)
     bastionPod := createBastionPod(kubeClient)
 
     setupExitHandlers(kubeClient, bastionPod)
-    errorChannel, chiselClientPort  := startBackgroundForwardingProcesses(
-        &options,
+    errorChannel, chiselClientPort := startBackgroundForwardingProcesses(
+        options,
+        kubeClient,
+        kubeConfig,
+        bastionPod,
+    )
+
+    log.Printf(
+        "Running chisel tunnel localhost:%d => %s:%d... Press <CTRL-C> to exit",
+        chiselClientPort,
+        options.remoteHost,
+        options.remotePort,
+    )
+
+    handleChildProcessErrors(errorChannel, kubeClient, bastionPod, options.verbose)
+}
+
+func sshSubcommand(options *bastionPodOptions) {
+    kubeClient, kubeConfig := getKubeClient(options.kubeConfigFile)
+    bastionPod := createBastionPod(kubeClient)
+
+    setupExitHandlers(kubeClient, bastionPod)
+    errorChannel, chiselClientPort := startBackgroundForwardingProcesses(
+        options,
         kubeClient,
         kubeConfig,
         bastionPod,
@@ -168,5 +195,5 @@ func sshSubcommand(options bastionPodOptions) {
 
 func main() {
     options, subcommand := parseCommandLine()
-    handlerForSubcommand[subcommand](options)
+    handlerForSubcommand[subcommand](&options)
 }
