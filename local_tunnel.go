@@ -10,6 +10,8 @@ import (
     "k8s.io/client-go/rest"
 )
 
+var backgroundCommands = [2]*exec.Cmd{}
+
 func createPortForwardTunnel(
     kubeConfigFile string,
     bastionPod *v1.Pod,
@@ -32,9 +34,9 @@ func createPortForwardTunnel(
         log.Printf("About to exec: {%s}", strings.Join(command.Args, " "))
     }
 
+    backgroundCommands[0] = command
     err := command.Run()
     if err != nil { *errorChannel<-err }
-
     waitGroup.Done()
 }
 
@@ -80,6 +82,7 @@ func setupChiselClient(
         log.Printf("About to exec: {%s}", strings.Join(command.Args, " "))
     }
 
+    backgroundCommands[1] = command
     command.Run()
     waitGroup.Done()
 }

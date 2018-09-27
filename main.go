@@ -14,6 +14,7 @@ import (
     "time"
     "github.com/phayes/freeport"
     "fmt"
+    "path"
 )
 
 var defaultSshArgs = []string{
@@ -21,13 +22,20 @@ var defaultSshArgs = []string{
     "-o", "UserKnownHostsFile=/dev/null",
 }
 
-
 var handlerForSubcommand = map[string]func(options bastionPodOptions){
     "ssh": sshSubcommand,
 }
 
 func cleanup(kubeClient *kubernetes.Clientset, bastionPod *v1.Pod) {
     err := deleteBastionPod(kubeClient, bastionPod)
+
+    for _, command := range backgroundCommands {
+        if command.Process != nil {
+            log.Printf("Killing background process %s, pid %d", path.Base(command.Path), command.Process.Pid)
+            command.Process.Kill()
+        }
+    }
+
     if err != nil { panic(err) }
 }
 
