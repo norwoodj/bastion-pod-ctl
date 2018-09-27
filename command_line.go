@@ -30,6 +30,7 @@ const verboseOptionHelp = "Print verbose output"
 
 const forwardSubcommandHelp = "Open a TCP tunnel through the created bastion pod to the specified private remote host"
 const sshSubcommandHelp = "SSH through the created bastion pod to the specified private remote host"
+const startSubcommandHelp = "For debugging - starts up a bastion pod in the specified cluster and then exits, leaving it running"
 
 const remoteHostRequiredMsg = "-r or --remote option is required!"
 const remotePortRequiredMsg = "-p or --remote-port option is required!"
@@ -37,11 +38,13 @@ const remotePortRequiredMsg = "-p or --remote-port option is required!"
 var helpForSubcommand = map[string]func(){
     "forward": printForwardSubcommandHelp,
     "ssh": printSshSubcommandHelp,
+    "start": printStartSubcommandHelp,
 }
 
 var checkOptionsForSubcommand = map[string]func(*bastionPodOptions){
     "forward": checkForwardOptions,
     "ssh": checkSshOptions,
+    "start": func(*bastionPodOptions) {},
 }
 
 func printBaseCommandHelp() {
@@ -58,6 +61,7 @@ func printBaseCommandHelp() {
     fmt.Println("Subcommands:")
     fmt.Printf("  forward        %s\n", forwardSubcommandHelp)
     fmt.Printf("  ssh            %s\n", sshSubcommandHelp)
+    fmt.Printf("  start          %s\n", startSubcommandHelp)
 }
 
 func printForwardSubcommandHelp() {
@@ -91,6 +95,19 @@ func printSshSubcommandHelp() {
     fmt.Printf("  -v, --verbose         %s\n", verboseOptionHelp)
 }
 
+func printStartSubcommandHelp() {
+    fmt.Println("Usage:")
+    fmt.Println("  bastion-pod-ctl start [options]")
+    fmt.Println()
+    fmt.Println("bastion-pod-ctl start starts up a bastion pod in the specified cluster and then exits, leaving it running.")
+    fmt.Println("This should mainly be used for debugging only")
+    fmt.Println()
+    fmt.Println("Options:")
+    fmt.Printf("  -h, --help            %s\n", helpOptionHelp)
+    fmt.Printf("  -k, --kubeconfig      %s\n", kubeConfigOptionHelp)
+    fmt.Printf("  -v, --verbose         %s\n", verboseOptionHelp)
+}
+
 func getForwardFlagSet(options *bastionPodOptions) *flag.FlagSet {
     forwardCommand := flag.NewFlagSet("forward", flag.ExitOnError)
     forwardCommand.BoolVarP(&options.help, "help", "h", false, helpOptionHelp)
@@ -110,6 +127,14 @@ func getSshFlagSet(options *bastionPodOptions) *flag.FlagSet {
     sshCommand.StringVarP(&options.remoteHost, "remote", "r", "", remoteOptionHelp)
     sshCommand.BoolVarP(&options.verbose, "verbose", "v", false, verboseOptionHelp)
     return sshCommand
+}
+
+func getStartFlagSet(options *bastionPodOptions) *flag.FlagSet {
+    startCommand := flag.NewFlagSet("start", flag.ExitOnError)
+    startCommand.BoolVarP(&options.help, "help", "h", false, helpOptionHelp)
+    startCommand.StringVarP(&options.kubeConfigFile, "kubeconfig", "k", defaultKubeConfigPath, kubeConfigOptionHelp)
+    startCommand.BoolVarP(&options.verbose, "verbose", "v", false, verboseOptionHelp)
+    return startCommand
 }
 
 func checkForwardOptions(options *bastionPodOptions) {
@@ -140,8 +165,9 @@ func checkSshOptions(options *bastionPodOptions) {
 
 func parseCommandLine() (bastionPodOptions, string) {
     options := bastionPodOptions{}
-    sshFlagSet := getSshFlagSet(&options)
     forwardFlagSet := getForwardFlagSet(&options)
+    sshFlagSet := getSshFlagSet(&options)
+    startFlagSet := getStartFlagSet(&options)
     subcommand := os.Args[1]
 
     switch subcommand {
@@ -152,6 +178,8 @@ func parseCommandLine() (bastionPodOptions, string) {
             forwardFlagSet.Parse(os.Args[2:])
         case "ssh":
             sshFlagSet.Parse(os.Args[2:])
+        case "start":
+            startFlagSet.Parse(os.Args[2:])
         default:
             log.Printf("%q is not valid command.\n", os.Args[1])
             printBaseCommandHelp()

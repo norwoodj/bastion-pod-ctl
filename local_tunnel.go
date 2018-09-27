@@ -24,6 +24,7 @@ func createPortForwardTunnel(
     log.Printf("Opening local kubectl port-forward tunnel localhost:%d => %s:%d...", localPort, bastionPod.Name, remotePort)
     command := exec.Command(
         "kubectl",
+        fmt.Sprintf("--namespace=%s", defaultBastionNamespace),
         fmt.Sprintf("--kubeconfig=%s", kubeConfigFile),
         "port-forward",
         bastionPod.Name,

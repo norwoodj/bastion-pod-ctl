@@ -23,6 +23,7 @@ var defaultSshArgs = []string{
 }
 
 var handlerForSubcommand = map[string]func(options *bastionPodOptions){
+    "start": startSubcommand,
     "forward": forwardSubcommand,
     "ssh": sshSubcommand,
 }
@@ -139,6 +140,9 @@ func forwardSubcommand(options *bastionPodOptions) {
         bastionPod,
     )
 
+    log.Printf("Sleeping 2 seconds for proxies to come up...")
+    time.Sleep(2 * time.Second)
+
     log.Printf(
         "Running chisel tunnel localhost:%d => %s:%d... Press <CTRL-C> to exit",
         chiselClientPort,
@@ -192,6 +196,11 @@ func sshSubcommand(options *bastionPodOptions) {
 
     log.Println("SSH connection terminated, deleting Bastion Pod...")
     cleanup(kubeClient, bastionPod)
+}
+
+func startSubcommand(options *bastionPodOptions) {
+    kubeClient, _ := getKubeClient(options.kubeConfigFile)
+    createBastionPod(kubeClient)
 }
 
 func main() {
