@@ -9,11 +9,11 @@ import (
     apiv1 "k8s.io/api/core/v1"
     metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
     "k8s.io/client-go/kubernetes"
-    "k8s.io/client-go/rest"
     "k8s.io/client-go/tools/clientcmd"
+    "k8s.io/client-go/rest"
 )
 
-const defaultChiselServerPodPort = 8080
+const defaultProxyServerPodPort = 8080
 const defaultPodStatusPollInterval = 3 * time.Second
 const defaultBastionNamespace = "bastion"
 
@@ -30,18 +30,21 @@ func getBastionNamespaceObject(namespaceName string) apiv1.Namespace {
     }
 }
 
-func getBastionPodObject(podName string) apiv1.Pod {
+func getBastionPodObject(podName string, remoteHost string, remotePort int32) apiv1.Pod {
     return apiv1.Pod{
         ObjectMeta: metav1.ObjectMeta{
             Name: podName,
         },
         Spec: apiv1.PodSpec{
             Containers: []apiv1.Container{{
-                Name:  "bastion",
-                Image: "jpillora/chisel",
-                Command: []string {"chisel", "server"},
+                Name:  "bastion-proxy",
+                Image: "tecnativa/tcp-proxy",
+                Env: []apiv1.EnvVar {
+                    {Name: "LISTEN", Value: fmt.Sprintf(":%d", defaultProxyServerPodPort)},
+                    {Name: "TALK", Value: fmt.Sprintf("%s:%d", remoteHost, remotePort)},
+                },
                 Ports: []apiv1.ContainerPort{
-                    {Protocol: apiv1.ProtocolTCP, ContainerPort: defaultChiselServerPodPort},
+                    {Protocol: apiv1.ProtocolTCP, ContainerPort: defaultProxyServerPodPort},
                 },
             }},
         },
@@ -51,7 +54,10 @@ func getBastionPodObject(podName string) apiv1.Pod {
 func getKubeClient(kubeConfigFile string) (*kubernetes.Clientset, *rest.Config) {
     // use the current context in kubeconfig
     kubeConfig, err := clientcmd.BuildConfigFromFlags("", kubeConfigFile)
-    if err != nil { panic(err.Error()) }
+    if err != nil {
+        fmt.Printf("Error configuring kubectl with provided config. Ensure that `current-context` is set in %s\n", kubeConfigFile)
+        panic(err.Error())
+    }
 
     kubeClient, err := kubernetes.NewForConfig(kubeConfig)
     if err != nil { panic(err.Error()) }
@@ -59,16 +65,16 @@ func getKubeClient(kubeConfigFile string) (*kubernetes.Clientset, *rest.Config) 
     return kubeClient, kubeConfig
 }
 
-func createBastionPod(kubeClient *kubernetes.Clientset) *apiv1.Pod {
+func createBastionPod(kubeClient *kubernetes.Clientset, remoteHost string, remotePort int32) *apiv1.Pod {
     bastionPodName := getBastionPodName()
-    log.Printf("Creating Bastion Pod %s", bastionPodName)
+    log.Printf("Creating Bastion Pod %s to forward traffic :%d => %s:%d", bastionPodName, defaultProxyServerPodPort, remoteHost, remotePort)
 
     namespacesClient := kubeClient.CoreV1().Namespaces()
     namespaceObject := getBastionNamespaceObject(defaultBastionNamespace)
     namespacesClient.Create(&namespaceObject)
 
     podsClient := kubeClient.CoreV1().Pods(defaultBastionNamespace)
-    podObject := getBastionPodObject(bastionPodName)
+    podObject := getBastionPodObject(bastionPodName, remoteHost, remotePort)
     pod, err := podsClient.Create(&podObject)
     if err != nil { panic(err) }
 

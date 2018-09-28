@@ -32,12 +32,10 @@ var handlerForSubcommand = map[string]func(options *bastionPodOptions){
 func cleanup(kubeClient *kubernetes.Clientset, bastionPod *v1.Pod) {
     err := deleteBastionPod(kubeClient, bastionPod)
 
-    for _, command := range backgroundCommands {
-        if command.Process != nil {
-            log.Printf("Killing background process %s, pid %d", path.Base(command.Path), command.Process.Pid)
-            command.Process.Kill()
-        }
-    }
+	if portForwardBackgroundCommand.Process != nil {
+		log.Printf("Killing background process %s, pid %d", path.Base(portForwardBackgroundCommand.Path), portForwardBackgroundCommand.Process.Pid)
+		portForwardBackgroundCommand.Process.Kill()
+	}
 
     if err != nil { panic(err) }
 }
@@ -55,7 +53,12 @@ func setupExitHandlers(kubeClient *kubernetes.Clientset, bastionPod *v1.Pod) {
     }()
 }
 
-func startBackgroundForwardingProcesses(
+func waitForProxyStartup() {
+    log.Println("Sleeping 2 seconds to allow proxy to come up...")
+    time.Sleep(2 * time.Second)
+}
+
+func startBackgroundForwardingProcess(
     options *bastionPodOptions,
     kubeClient *kubernetes.Clientset,
     kubeConfig *rest.Config,
@@ -68,35 +71,22 @@ func startBackgroundForwardingProcesses(
         os.Exit(1)
     }
 
-    ephemeralPort0, _ := freeport.GetFreePort()
-    kubectlTunnelPort := int32(ephemeralPort0)
-
-    chiselClientPort := options.localPort
-    if chiselClientPort < 0 {
-        ephemeralPort1, _ := freeport.GetFreePort()
-        chiselClientPort = int32(ephemeralPort1)
+    localTunnelPort := options.localPort
+    if localTunnelPort < 0 {
+        ephemeralPort, _ := freeport.GetFreePort()
+        localTunnelPort = int32(ephemeralPort)
     }
 
     waitGroup.Add(1)
     go createPortForwardTunnel(
+    	kubeConfig,
         options.kubeConfigFile,
         bastionPod,
-        kubectlTunnelPort,
-        defaultChiselServerPodPort,
-        &waitGroup,
-        &errorChannel,
-        options.verbose,
-    )
-
-    waitGroup.Add(1)
-    go setupChiselClient(
-        bastionPod.Name,
-        kubeConfig,
+        localTunnelPort,
         options.remoteHost,
         options.remotePort,
-        chiselClientPort,
-        kubectlTunnelPort,
         &waitGroup,
+        &errorChannel,
         options.verbose,
     )
 
@@ -105,7 +95,7 @@ func startBackgroundForwardingProcesses(
         close(errorChannel)
     }()
 
-    return &errorChannel, chiselClientPort
+    return &errorChannel, localTunnelPort
 }
 
 func handleChildProcessErrors(
@@ -117,7 +107,7 @@ func handleChildProcessErrors(
     select {
         case err := <-*errorChannel:
             if err != nil {
-                log.Printf("An Error occurred when starting background port forwarding processes, cleaning up...")
+                log.Printf("An Error occurred when starting background port forwarding process, cleaning up...")
                 cleanup(kubeClient, bastionPod)
 
                 if verbose {
@@ -130,23 +120,25 @@ func handleChildProcessErrors(
 }
 
 func forwardSubcommand(options *bastionPodOptions) {
+	if options.localPort < 0 {
+	    options.localPort = options.remotePort
+	}
+
     kubeClient, kubeConfig := getKubeClient(options.kubeConfigFile)
-    bastionPod := createBastionPod(kubeClient)
+    bastionPod := createBastionPod(kubeClient, options.remoteHost, options.remotePort)
 
     setupExitHandlers(kubeClient, bastionPod)
-    errorChannel, chiselClientPort := startBackgroundForwardingProcesses(
+    errorChannel, localTunnelPort := startBackgroundForwardingProcess(
         options,
         kubeClient,
         kubeConfig,
         bastionPod,
     )
 
-    log.Printf("Sleeping 2 seconds for proxies to come up...")
-    time.Sleep(2 * time.Second)
-
+    waitForProxyStartup()
     log.Printf(
-        "Running chisel tunnel localhost:%d => %s:%d... Press <CTRL-C> to exit",
-        chiselClientPort,
+        "Running proxy tunnel localhost:%d => %s:%d... Press <CTRL-C> to exit",
+        localTunnelPort,
         options.remoteHost,
         options.remotePort,
     )
@@ -155,12 +147,15 @@ func forwardSubcommand(options *bastionPodOptions) {
 }
 
 func sshSubcommand(options *bastionPodOptions) {
+    if options.remotePort < 0 {
+        options.remotePort = 22
+    }
+
     kubeClient, kubeConfig := getKubeClient(options.kubeConfigFile)
-    bastionPod := createBastionPod(kubeClient)
+    bastionPod := createBastionPod(kubeClient, options.remoteHost, options.remotePort)
 
     setupExitHandlers(kubeClient, bastionPod)
-    options.remotePort = 22
-    errorChannel, chiselClientPort := startBackgroundForwardingProcesses(
+    errorChannel, localTunnelPort := startBackgroundForwardingProcess(
         options,
         kubeClient,
         kubeConfig,
@@ -169,7 +164,7 @@ func sshSubcommand(options *bastionPodOptions) {
 
     go handleChildProcessErrors(errorChannel, kubeClient, bastionPod, options.verbose)
     sshArgs := defaultSshArgs[:]
-    sshArgs = append(sshArgs, "-p", fmt.Sprintf("%d", chiselClientPort))
+    sshArgs = append(sshArgs, "-p", fmt.Sprintf("%d", localTunnelPort))
 
     if options.verbose {
         sshArgs = append(sshArgs, "-v")
@@ -177,11 +172,9 @@ func sshSubcommand(options *bastionPodOptions) {
 
     sshArgs = append(sshArgs, "localhost")
     command := exec.Command("ssh", sshArgs...)
+    waitForProxyStartup()
 
-    log.Println("Sleeping 5 seconds to allow proxies to come up...")
-    time.Sleep(5 * time.Second)
-
-    log.Printf("Starting SSH session through localhost:%d", chiselClientPort)
+    log.Printf("Starting SSH session through localhost:%d", localTunnelPort)
     if options.verbose {
         log.Printf("About to exec: %s", strings.Join(command.Args, " "))
     }
@@ -201,7 +194,7 @@ func sshSubcommand(options *bastionPodOptions) {
 
 func startSubcommand(options *bastionPodOptions) {
     kubeClient, _ := getKubeClient(options.kubeConfigFile)
-    createBastionPod(kubeClient)
+    createBastionPod(kubeClient, options.remoteHost, options.remotePort)
 }
 
 func main() {

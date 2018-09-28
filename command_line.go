@@ -45,7 +45,7 @@ var helpForSubcommand = map[string]func(){
 var checkOptionsForSubcommand = map[string]func(*bastionPodOptions){
     "forward": checkForwardOptions,
     "ssh": checkSshOptions,
-    "start": func(*bastionPodOptions) {},
+    "start": checkStartOptions,
 }
 
 func printBaseCommandHelp() {
@@ -134,6 +134,8 @@ func getStartFlagSet(options *bastionPodOptions) *flag.FlagSet {
     startCommand := flag.NewFlagSet("start", flag.ExitOnError)
     startCommand.BoolVarP(&options.help, "help", "h", false, helpOptionHelp)
     startCommand.StringVarP(&options.kubeConfigFile, "kubeconfig", "k", defaultKubeConfigPath, kubeConfigOptionHelp)
+    startCommand.Int32VarP(&options.remotePort, "remote-port", "p", -1, forwardRemotePortHelp)
+    startCommand.StringVarP(&options.remoteHost, "remote", "r", "", remoteOptionHelp)
     startCommand.BoolVarP(&options.verbose, "verbose", "v", false, verboseOptionHelp)
     return startCommand
 }
@@ -150,16 +152,26 @@ func checkForwardOptions(options *bastionPodOptions) {
         printForwardSubcommandHelp()
         os.Exit(1)
     }
-
-    if options.localPort < 0 {
-        options.localPort = options.remotePort
-    }
 }
 
 func checkSshOptions(options *bastionPodOptions) {
     if options.remoteHost == "" {
         log.Println(remoteHostRequiredMsg)
         printSshSubcommandHelp()
+        os.Exit(1)
+    }
+}
+
+func checkStartOptions(options *bastionPodOptions) {
+    if options.remoteHost == "" {
+        log.Println(remoteHostRequiredMsg)
+        printSshSubcommandHelp()
+        os.Exit(1)
+    }
+
+    if options.remotePort < 0 {
+        log.Println(remotePortRequiredMsg)
+        printForwardSubcommandHelp()
         os.Exit(1)
     }
 }
