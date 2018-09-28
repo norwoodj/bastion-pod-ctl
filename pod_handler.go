@@ -38,10 +38,10 @@ func getBastionPodObject(podName string, remoteHost string, remotePort int32) ap
         Spec: apiv1.PodSpec{
             Containers: []apiv1.Container{{
                 Name:  "bastion-proxy",
-                Image: "tecnativa/tcp-proxy",
-                Env: []apiv1.EnvVar {
-                    {Name: "LISTEN", Value: fmt.Sprintf(":%d", defaultProxyServerPodPort)},
-                    {Name: "TALK", Value: fmt.Sprintf("%s:%d", remoteHost, remotePort)},
+                Image: "alpine/socat",
+                Args: []string{
+                    fmt.Sprintf("tcp-l:%d,fork,reuseaddr", defaultProxyServerPodPort),
+                    fmt.Sprintf("tcp:%s:%d", remoteHost, remotePort),
                 },
                 Ports: []apiv1.ContainerPort{
                     {Protocol: apiv1.ProtocolTCP, ContainerPort: defaultProxyServerPodPort},
