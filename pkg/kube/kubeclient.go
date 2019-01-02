@@ -9,19 +9,19 @@ import (
 )
 
 func getKubeClientConfig(kubecontext string, kubeconfig string) (*rest.Config, error) {
-    rules := clientcmd.NewDefaultClientConfigLoadingRules()
-    rules.DefaultClientConfig = &clientcmd.DefaultClientConfig
-    overrides := &clientcmd.ConfigOverrides{ClusterDefaults: clientcmd.ClusterDefaults}
+	rules := clientcmd.NewDefaultClientConfigLoadingRules()
+	rules.DefaultClientConfig = &clientcmd.DefaultClientConfig
+	overrides := &clientcmd.ConfigOverrides{ClusterDefaults: clientcmd.ClusterDefaults}
 
-    if kubecontext != "" {
-        overrides.CurrentContext = kubecontext
-    }
+	if kubecontext != "" {
+		overrides.CurrentContext = kubecontext
+	}
 
-    if kubeconfig != "" {
-        rules.ExplicitPath = kubeconfig
-    }
+	if kubeconfig != "" {
+		rules.ExplicitPath = kubeconfig
+	}
 
-    config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
+	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
 
 	if err != nil {
 		return nil, fmt.Errorf("could not get Kubernetes config for context %q: %s", kubecontext, err)

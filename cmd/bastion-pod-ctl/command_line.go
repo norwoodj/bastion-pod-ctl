@@ -16,7 +16,9 @@ const namespaceOptionHelp = "The namespace in which bastion pods should be creat
 const sshRemotePortHelp = "The ssh port of the remote host we're tunneling to"
 const verboseHelp = "Print verbose output"
 
+const clearSubcommandHelp = "Delete all running bastion pods in the specified namespace"
 const forwardSubcommandHelp = "Open a TCP tunnel through the created bastion pod to the specified private remote host"
+const listSubcommandHelp = "Print a list of currently running bastion pods"
 const sshSubcommandHelp = "SSH through the created bastion pod to the specified private remote host"
 const startSubcommandHelp = "For debugging - starts up a bastion pod in the specified cluster and then exits, leaving it running"
 
@@ -51,7 +53,9 @@ func newRootCommand() *cobra.Command {
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.BindPFlags(rootCmd.PersistentFlags())
 
+	rootCmd.AddCommand(newClearCommand())
 	rootCmd.AddCommand(newForwardCommand())
+	rootCmd.AddCommand(newListCommand())
 	rootCmd.AddCommand(newSshCommand())
 	rootCmd.AddCommand(newStartCommand())
 
@@ -61,13 +65,14 @@ func newRootCommand() *cobra.Command {
 func newForwardCommand() *cobra.Command {
 	forwardCommand := &cobra.Command{
 		Use:   "forward <remote-host> <remote-port>",
+		Args: cobra.ExactArgs(2),
 		Short: forwardSubcommandHelp,
 		Run: forwardSubcommand,
 	}
 
-    forwardCommand.Flags().IntP("local-port", "p", -1, forwardLocalPortHelp)
+	forwardCommand.Flags().IntP("local-port", "p", -1, forwardLocalPortHelp)
 	viper.BindPFlags(forwardCommand.Flags())
-    return forwardCommand
+	return forwardCommand
 }
 
 func newSshCommand() *cobra.Command {
@@ -78,16 +83,33 @@ func newSshCommand() *cobra.Command {
 		Run: sshSubcommand,
 	}
 
-    sshCommand.Flags().IntP("remote-port", "r", 22, sshRemotePortHelp)
+	sshCommand.Flags().IntP("remote-port", "r", 22, sshRemotePortHelp)
 	sshCommand.Flags().BoolP("verbose", "v", false, verboseHelp)
 	viper.BindPFlags(sshCommand.Flags())
-    return sshCommand
+	return sshCommand
 }
 
 func newStartCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "start",
+		Use:   "start <remote-host> <remote-port>",
+		Args: cobra.ExactArgs(2),
 		Short: startSubcommandHelp,
 		Run: startSubcommand,
+	}
+}
+
+func newListCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "list",
+		Short: listSubcommandHelp,
+		Run: listSubcommand,
+	}
+}
+
+func newClearCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "clear",
+		Short: clearSubcommandHelp,
+		Run: clearSubcommand,
 	}
 }
