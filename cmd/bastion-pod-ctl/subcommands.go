@@ -25,12 +25,12 @@ var defaultSshArgs = []string{
 
 
 func cleanup(kubeClient kubernetes.Interface, bastionPod *v1.Pod, tunnel *kube.Tunnel) error {
-	if tunnel != nil {
-		tunnel.Close()
-	}
-
 	if bastionPod != nil {
 		return kube.DeleteBastionPod(kubeClient, bastionPod)
+	}
+
+	if tunnel != nil {
+		tunnel.Close()
 	}
 
 	return nil
@@ -145,7 +145,7 @@ func forwardSubcommand(_ *cobra.Command, args []string) {
 		localPort = remotePort
 	}
 
-	portForward := startPortForward(kubeClient, kubeConfig, bastionPod, kube.ProxyServerPodPort)
+	portForward := startPortForward(kubeClient, kubeConfig, bastionPod, localPort)
 	done := setupExitHandlers(kubeClient, bastionPod, portForward)
 
 	log.Infof(
