@@ -6,8 +6,8 @@ through the pod or simply opening a local port for you to connect other applicat
 
 To build:
 ```bash
-$ make deps
-$ make
+cd cmd/bastion-pod-ctl
+go build
 ```
 
 ## How it works
