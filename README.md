@@ -2,7 +2,11 @@ bastion-pod-ctl
 ===============
 A tool for creating tcp tunnels into a private network via a Pod running on a kubernetes worker node
 in that private network. This script has commands for ssh-ing into an instance through a tunnel
-through the pod or simply opening a local port for you to connect other applications to.
+through the pod or simply opening a local port for you to connect to other applications through.
+
+## Building
+Requirements:
+* go >= 1.11
 
 To build:
 ```bash
@@ -30,40 +34,35 @@ Host in this situation, and can proxy traffic into the private network in the sa
 ```
 
 This works in practice by starting an `alpine/socat` pod that forwards tcp on port 8080
-then starting a kubectl process locally to forward a port to that pod. This assumes that
-the pods run on worker nodes in a private network that's not accessible from the public
+then opening a port-forward tunnel locally to forward local traffic to that pod. This assumes
+that the pods run on worker nodes in a private network that's not accessible from the public
 internet. By forwarding a port to the pod in the private subnet, the pod acts as a proxy
 into the private network, enabling one to ssh into private instances or connect to
 private databases in emergency situations.
 
-## Requirements
-In order to use this tool, you must have `kubectl` installed, and some kubeconfig set up
-for a cluster you have access to. That kubeconfig file must have the `current-context` key
-set:
-```yaml
-kind: Config
-current-context: cool-application-nonprod
-```
-
-```bash
-bastion-pod-ctl --kubeconfig <above-file-path> ...
-```
-
 
 ## Examples
-SSH into private instance via a pod running on a worker node in that same network
+These examples will use whatever current context you have set in your configured kubeconfig file
+to authenticate to the cluster, same as kubectl. Keep in mind that to run the ssh example, you'll
+need to configure whatever SSH key you use to authenticate to the instance in question to work for
+`localhost`, as the utility forks an ssh process that connects to the tunnel port on your local
+machine. Something like:
+```
+##
+# Bastion Pod
+##
+Host localhost
+  IdentityFile ~/.ssh/ec2.id_rsa
+```
+
+SSH into a private instance via a pod running on a worker node in that same network
 ```bash
-bastion-pod-ctl ssh \
-    --kubeconfig ~/.kube/kubeconfig-cool-application-nonprod \
-    --remote ip-10-0-23-23.us-west-2.compute.internal
+bastion-pod-ctl ssh ip-10-0-23-23.us-west-2.compute.internal
 ```
 
 Forward traffic through a pod on a worker node to a private postgres database
 ```bash
-bastion-pod-ctl forward \
-    --kubeconfig ~/.kube/kubeconfig-cool-application-nonprod \
-    --remote primary.postgres.tst.cool-application.com \
-    --remote-port 5432
+bastion-pod-ctl forward primary.postgres.cool-application.com 5432
 ```
 
 Once the above is running you can connect with:
