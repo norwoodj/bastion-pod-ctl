@@ -12,6 +12,8 @@ import (
 const forwardLocalPortHelp = "The local port of the tunnel proxying traffic to the private remote host (default = ${remote-port})"
 const kubeConfigOptionHelp = "Supply path to a kubeconfig file to use in authenticating to the kubernetes cluster API"
 const kubeContextOptionHelp = "Name of kubernetes context to use"
+const cpuRequestOptionHelp = "The quantity of CPU to be used in the requests/limits field on bastion pods"
+const memoryRequestOptionHelp = "The quantity of memory to be used in the requests/limits field on bastion pods"
 const namespaceOptionHelp = "The namespace in which bastion pods should be created"
 const sshRemotePortHelp = "The ssh port of the remote host we're tunneling to"
 const verboseHelp = "Print verbose output"
@@ -43,9 +45,11 @@ func newRootCommand() *cobra.Command {
 
 	logLevelUsage := fmt.Sprintf("Level of logs that should printed, one of (%s)", strings.Join(possibleLogLevels(), ", "))
 
-	rootCmd.PersistentFlags().StringP("kube-context", "c", "", kubeContextOptionHelp)
-	rootCmd.PersistentFlags().StringP("kube-config", "k", "", kubeConfigOptionHelp)
+	rootCmd.PersistentFlags().String("kube-config", "", kubeConfigOptionHelp)
+	rootCmd.PersistentFlags().String("kube-context", "", kubeContextOptionHelp)
 	rootCmd.PersistentFlags().StringP("log-level", "l", "info", logLevelUsage)
+	rootCmd.PersistentFlags().StringP("cpu-request", "c", "5m", cpuRequestOptionHelp)
+	rootCmd.PersistentFlags().StringP("memory-request", "m", "16M", memoryRequestOptionHelp)
 	rootCmd.PersistentFlags().StringP("namespace", "n", defaultBastionNamespace, namespaceOptionHelp)
 
 	viper.AutomaticEnv()

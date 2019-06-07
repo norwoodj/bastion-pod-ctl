@@ -2,6 +2,8 @@ package kube
 
 import (
 	"fmt"
+	"github.com/spf13/viper"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"os"
 	"time"
 
@@ -30,6 +32,19 @@ func getBastionPodLabels(podName string) map[string]string {
 }
 
 func getBastionPodObject(podName string, remoteHost string, remotePort int) apiv1.Pod {
+	cpuRequests := viper.GetString("cpu-request")
+	memoryRequests := viper.GetString("memory-request")
+	podResources := apiv1.ResourceRequirements{
+		Requests: apiv1.ResourceList{
+			apiv1.ResourceCPU: resource.MustParse(cpuRequests),
+			apiv1.ResourceMemory: resource.MustParse(memoryRequests),
+		},
+		Limits: apiv1.ResourceList{
+			apiv1.ResourceCPU: resource.MustParse(cpuRequests),
+			apiv1.ResourceMemory: resource.MustParse(memoryRequests),
+		},
+	}
+
 	return apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: podName,
@@ -46,6 +61,7 @@ func getBastionPodObject(podName string, remoteHost string, remotePort int) apiv
 				Ports: []apiv1.ContainerPort{
 					{Protocol: apiv1.ProtocolTCP, ContainerPort: ProxyServerPodPort},
 				},
+				Resources: podResources,
 			}},
 		},
 	}
