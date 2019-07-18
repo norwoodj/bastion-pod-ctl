@@ -4,12 +4,19 @@ A tool for creating tcp tunnels into a private network via a Pod running on a ku
 in that private network. This script has commands for ssh-ing into an instance through a tunnel
 through the pod or simply opening a local port for you to connect to other applications through.
 
-## Building
-Requirements:
-* go >= 1.11
+## Installation
+`bastion-pod-ctl` can be installed using [homebrew](https://brew.sh/):
 
-To build:
-```bash
+```
+brew install norwoodj/tap/bastion-pod-ctl
+```
+
+This will download and install the [latest release](https://github.com/norwoodj/bastion-pod-ctl/releases/latest)
+of the tool.
+
+To build from source in this repository:
+
+```
 cd cmd/bastion-pod-ctl
 go build
 ```

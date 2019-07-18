@@ -26,6 +26,8 @@ const startSubcommandHelp = "For debugging - starts up a bastion pod in the spec
 
 const defaultBastionNamespace = "bastion"
 
+var version string
+
 
 func possibleLogLevels() []string {
 	levels := make([]string, 0)
@@ -41,6 +43,7 @@ func newRootCommand() *cobra.Command {
 	var rootCmd = &cobra.Command{
 		Use:   "bastion-pod-ctl",
 		Short: "bastion-pod-ctl is a tool for for forwarding tcp traffic through pods running on kubernetes worker nodes in a private network",
+		Version: version,
 	}
 
 	logLevelUsage := fmt.Sprintf("Level of logs that should printed, one of (%s)", strings.Join(possibleLogLevels(), ", "))

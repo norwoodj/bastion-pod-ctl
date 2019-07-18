@@ -1,0 +1,35 @@
+before:
+  hooks:
+    - go mod download
+builds:
+  - main: ./cmd/bastion-pod-ctl
+    env:
+      - CGO_ENABLED=0
+archives:
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
+checksum:
+  name_template: checksums.txt
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+brews:
+  - github:
+      owner: norwoodj
+      name: homebrew
+    folder: Formula
+    homepage: https://github.com/norwoodj/bastion-pod-ctl
+    description: A tool for creating tcp tunnels into a private network via a Pod running on a kubernetes worker node in that private network
+    install: |
+      bin.install "bastion-pod-ctl"
+    test: |
+      system "#{bin}/bastion-pod-ctl --version"
