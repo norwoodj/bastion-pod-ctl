@@ -17,17 +17,16 @@ import (
 const ProxyServerPodPort = 8080
 const BastionPodSelector = "app.kubernetes.io/managed-by==bastion-pod-ctl"
 
-
 func getBastionPodName() string {
 	return fmt.Sprintf("bastion-%s-%s", os.Getenv("USER"), time.Now().UTC().Format("20060102-150405"))
 }
 
 func getBastionPodLabels(podName string) map[string]string {
-	return map[string]string {
-		"app.kubernetes.io/component": "cluster",
+	return map[string]string{
+		"app.kubernetes.io/component":  "cluster",
 		"app.kubernetes.io/managed-by": "bastion-pod-ctl",
-		"app.kubernetes.io/name": podName,
-		"app.kubernetes.io/part-of": "bastion-pod-ctl",
+		"app.kubernetes.io/name":       podName,
+		"app.kubernetes.io/part-of":    "bastion-pod-ctl",
 	}
 }
 
@@ -36,18 +35,18 @@ func getBastionPodObject(podName string, remoteHost string, remotePort int) apiv
 	memoryRequests := viper.GetString("memory-request")
 	podResources := apiv1.ResourceRequirements{
 		Requests: apiv1.ResourceList{
-			apiv1.ResourceCPU: resource.MustParse(cpuRequests),
+			apiv1.ResourceCPU:    resource.MustParse(cpuRequests),
 			apiv1.ResourceMemory: resource.MustParse(memoryRequests),
 		},
 		Limits: apiv1.ResourceList{
-			apiv1.ResourceCPU: resource.MustParse(cpuRequests),
+			apiv1.ResourceCPU:    resource.MustParse(cpuRequests),
 			apiv1.ResourceMemory: resource.MustParse(memoryRequests),
 		},
 	}
 
 	return apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: podName,
+			Name:   podName,
 			Labels: getBastionPodLabels(podName),
 		},
 		Spec: apiv1.PodSpec{

@@ -28,7 +28,6 @@ const defaultBastionNamespace = "bastion"
 
 var version string
 
-
 func possibleLogLevels() []string {
 	levels := make([]string, 0)
 
@@ -41,8 +40,8 @@ func possibleLogLevels() []string {
 
 func newRootCommand() *cobra.Command {
 	var rootCmd = &cobra.Command{
-		Use:   "bastion-pod-ctl",
-		Short: "bastion-pod-ctl is a tool for for forwarding tcp traffic through pods running on kubernetes worker nodes in a private network",
+		Use:     "bastion-pod-ctl",
+		Short:   "bastion-pod-ctl is a tool for for forwarding tcp traffic through pods running on kubernetes worker nodes in a private network",
 		Version: version,
 	}
 
@@ -72,9 +71,9 @@ func newRootCommand() *cobra.Command {
 func newForwardCommand() *cobra.Command {
 	forwardCommand := &cobra.Command{
 		Use:   "forward <remote-host> <remote-port>",
-		Args: cobra.ExactArgs(2),
+		Args:  cobra.ExactArgs(2),
 		Short: forwardSubcommandHelp,
-		Run: forwardSubcommand,
+		Run:   forwardSubcommand,
 	}
 
 	forwardCommand.Flags().IntP("local-port", "p", -1, forwardLocalPortHelp)
@@ -85,9 +84,9 @@ func newForwardCommand() *cobra.Command {
 func newSshCommand() *cobra.Command {
 	sshCommand := &cobra.Command{
 		Use:   "ssh <remote-host>",
-		Args: cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(1),
 		Short: sshSubcommandHelp,
-		Run: sshSubcommand,
+		Run:   sshSubcommand,
 	}
 
 	sshCommand.Flags().IntP("remote-port", "r", 22, sshRemotePortHelp)
@@ -99,9 +98,9 @@ func newSshCommand() *cobra.Command {
 func newStartCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "start <remote-host> <remote-port>",
-		Args: cobra.ExactArgs(2),
+		Args:  cobra.ExactArgs(2),
 		Short: startSubcommandHelp,
-		Run: startSubcommand,
+		Run:   startSubcommand,
 	}
 }
 
@@ -109,7 +108,7 @@ func newListCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
 		Short: listSubcommandHelp,
-		Run: listSubcommand,
+		Run:   listSubcommand,
 	}
 }
 
@@ -117,6 +116,6 @@ func newClearCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "clear",
 		Short: clearSubcommandHelp,
-		Run: clearSubcommand,
+		Run:   clearSubcommand,
 	}
 }

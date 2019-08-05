@@ -23,7 +23,6 @@ var defaultSshArgs = []string{
 	"-o", "UserKnownHostsFile=/dev/null",
 }
 
-
 func cleanup(kubeClient kubernetes.Interface, bastionPod *v1.Pod, tunnel *kube.Tunnel) error {
 	if bastionPod != nil {
 		return kube.DeleteBastionPod(kubeClient, bastionPod)
