@@ -1,5 +1,7 @@
 bastion-pod-ctl
 ===============
+[![Go Report Card](https://goreportcard.com/badge/github.com/norwoodj/bastion-pod-ctl)](https://goreportcard.com/report/github.com/norwoodj/bastion-pod-ctl)
+
 A tool for creating tcp tunnels into a private network via a Pod running on a kubernetes worker node
 in that private network. This script has commands for ssh-ing into an instance through a tunnel
 through the pod or simply opening a local port for you to connect to other applications through.

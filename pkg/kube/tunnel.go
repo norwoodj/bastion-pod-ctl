@@ -13,28 +13,28 @@ import (
 
 // Tunnel describes a ssh-like tunnel to a kubernetes pod
 type Tunnel struct {
-	Local	 int
-	Remote	int
+	Local     int
+	Remote    int
 	Namespace string
 	PodName   string
-	Out	   io.Writer
+	Out       io.Writer
 	stopChan  chan struct{}
 	readyChan chan struct{}
-	config	*rest.Config
-	client	rest.Interface
+	config    *rest.Config
+	client    rest.Interface
 }
 
 // NewTunnel creates a new tunnel
 func NewTunnel(client rest.Interface, config *rest.Config, namespace, podName string, remote int) *Tunnel {
 	return &Tunnel{
-		config:	config,
-		client:	client,
+		config:    config,
+		client:    client,
 		Namespace: namespace,
 		PodName:   podName,
-		Remote:	remote,
+		Remote:    remote,
 		stopChan:  make(chan struct{}, 1),
 		readyChan: make(chan struct{}, 1),
-		Out:	   ioutil.Discard,
+		Out:       ioutil.Discard,
 	}
 }
 
