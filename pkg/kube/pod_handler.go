@@ -2,10 +2,11 @@ package kube
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"os"
 	"time"
+
+	"github.com/spf13/viper"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -33,6 +34,7 @@ func getBastionPodLabels(podName string) map[string]string {
 func getBastionPodObject(podName string, remoteHost string, remotePort int) apiv1.Pod {
 	cpuRequests := viper.GetString("cpu-request")
 	memoryRequests := viper.GetString("memory-request")
+	socatImage := viper.GetString("socat-image")
 	podResources := apiv1.ResourceRequirements{
 		Requests: apiv1.ResourceList{
 			apiv1.ResourceCPU:    resource.MustParse(cpuRequests),
@@ -52,7 +54,7 @@ func getBastionPodObject(podName string, remoteHost string, remotePort int) apiv
 		Spec: apiv1.PodSpec{
 			Containers: []apiv1.Container{{
 				Name:  "bastion-proxy",
-				Image: "alpine/socat",
+				Image: socatImage,
 				Args: []string{
 					fmt.Sprintf("tcp-l:%d,fork,reuseaddr", ProxyServerPodPort),
 					fmt.Sprintf("tcp:%s:%d", remoteHost, remotePort),

@@ -16,6 +16,7 @@ const cpuRequestOptionHelp = "The quantity of CPU to be used in the requests/lim
 const memoryRequestOptionHelp = "The quantity of memory to be used in the requests/limits field on bastion pods"
 const namespaceOptionHelp = "The namespace in which bastion pods should be created"
 const sshRemotePortHelp = "The ssh port of the remote host we're tunneling to"
+const socatImageHelp = "The full ref of the socat image with which to start the bastion"
 const verboseHelp = "Print verbose output"
 
 const clearSubcommandHelp = "Delete all running bastion pods in the specified namespace"
@@ -25,6 +26,7 @@ const sshSubcommandHelp = "SSH through the created bastion pod to the specified 
 const startSubcommandHelp = "For debugging - starts up a bastion pod in the specified cluster and then exits, leaving it running"
 
 const defaultBastionNamespace = "bastion"
+const defaultSocatImage = "alpine/socat@sha256:08498e1d5572af58f4cc88e9cd6c8dfe27cdbed4d9f1dd0b38ac195b4ab9ae54"
 
 var version string
 
@@ -53,6 +55,7 @@ func newRootCommand() *cobra.Command {
 	rootCmd.PersistentFlags().StringP("cpu-request", "c", "5m", cpuRequestOptionHelp)
 	rootCmd.PersistentFlags().StringP("memory-request", "m", "16M", memoryRequestOptionHelp)
 	rootCmd.PersistentFlags().StringP("namespace", "n", defaultBastionNamespace, namespaceOptionHelp)
+	rootCmd.PersistentFlags().StringP("socat-image", "s", defaultSocatImage, socatImageHelp)
 
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("BASTION_POD")
